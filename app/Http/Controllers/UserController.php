@@ -13,7 +13,7 @@ class UserController extends Controller
     {
         $search = $request->input('search');
         $entries = $request->input('entries', 10);
-        
+
         $users = User::when($search, function($query, $search) {
             return $query->where('name', 'like', "%$search%");
         })->paginate($entries);
@@ -27,7 +27,7 @@ class UserController extends Controller
     //     $search = $request->input('search');
     //     $entries = $request->input('entries', 10);
 
-    //     $users = User::where('role', 'cashier') // hanya ambil role cashier
+    //     $users = User::where('role', 'cashier')
     //         ->when($search, function($query, $search) {
     //             return $query->where('name', 'like', "%$search%");
     //         })

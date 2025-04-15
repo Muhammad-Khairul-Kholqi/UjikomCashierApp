@@ -4,7 +4,7 @@
     <h1 class="font-bold text-2xl mb-5">Edit Produk</h1>
 
     <div class="bg-white shadow-md rounded-lg p-6">
-        <form action="{{ route('admin.produk.update', $produk->id) }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+        <form action="{{ route('admin.produk.update', $produk->id) }}" method="POST" enctype="multipart/form-data" class="space-y-5" onsubmit="return validateForm()">
             @csrf
             @method('PUT')
 
@@ -17,8 +17,9 @@
 
                 <div>
                     <label class="block text-gray-700 font-medium mb-1">Harga</label>
-                    <input type="number" name="harga" value="{{ old('harga', $produk->harga) }}" required min="1"
+                    <input type="number" name="harga" id="harga" value="{{ old('harga', $produk->harga) }}" required
                         class="border border-gray-300 focus:border-blue-500 rounded-lg px-4 h-10 w-full outline-none">
+                    <p id="payment_limit_error" class="text-red-500 text-sm hidden">Nominal terlalu besar</p>
                 </div>
 
                 <div>
@@ -43,4 +44,21 @@
             </button>
         </form>
     </div>
+
+    <script>
+        function validateForm() {
+            var harga = document.getElementById('harga').value;
+            var maxHarga = 10000000;  // Batas harga maksimal (misalnya 10 juta)
+            var errorMessage = document.getElementById('payment_limit_error');
+
+            if (harga > maxHarga) {
+                errorMessage.classList.remove('hidden');
+                return false;  // Mencegah form disubmit
+            } else {
+                errorMessage.classList.add('hidden');
+                return true;  // Form dapat disubmit
+            }
+        }
+    </script>
+
 @endsection

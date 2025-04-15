@@ -1,46 +1,67 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Sales;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Point;
+use App\Models\Product;
 
 class PembelianController extends Controller
 {
     public function getPembelianCashier(Request $request)
-    {
-        $search = $request->input('search');
-        $entries = $request->input('entries', 10);
-        $isExport = $request->has('export');
-        $userId = Auth::id();
-        $cashierName = Auth::user()->name;
+{
+    $search = $request->input('search');
+    $entries = $request->input('entries', 10);
+    $isExport = $request->has('export');
+    $filter = $request->input('filter', 'all');  // Default ke 'all' jika tidak ada filter
+    $userId = Auth::id();
+    $cashierName = Auth::user()->name;
 
-        $query = Sales::with('member')
-            ->where('employee_id', $userId)
-            ->when($search, function ($query, $search) {
-                return $query->whereHas('member', function ($q) use ($search) {
-                    $q->where('name', 'like', "%$search%");
-                });
-            })
-            ->orderBy('created_at', 'desc');
-
-        if ($isExport && $request->ajax()) {
-            $allSales = $query->get();
-
-            $salesData = $allSales->map(function ($sale) use ($cashierName) {
-                $sale->cashier_name = $cashierName;
-                return $sale;
+    $query = Sales::with('member')
+        ->where('employee_id', $userId)
+        ->when($search, function ($query, $search) {
+            return $query->whereHas('member', function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%");
             });
+        });
 
-            return response()->json($salesData);
-        }
-
-        $pembelian = $query->paginate($entries);
-
-        return view('cashier.pembelian.index', compact('pembelian', 'search', 'entries', 'cashierName'));
+    // Filter berdasarkan per hari
+    if ($filter == 'day') {
+        $query->whereDate('created_at', now()->toDateString());
     }
+
+    // Filter berdasarkan bulan
+    if ($filter == 'month') {
+        $query->whereMonth('created_at', now()->month);
+    }
+
+    // Filter berdasarkan tahun
+    if ($filter == 'year') {
+        $query->whereYear('created_at', now()->year);
+    }
+
+    // Ekspor data
+    if ($isExport && $request->ajax()) {
+        $allSales = $query->get();
+
+        $salesData = $allSales->map(function ($sale) use ($cashierName) {
+            $sale->cashier_name = $cashierName;
+            return $sale;
+        });
+
+        return response()->json($salesData);
+    }
+
+    // Pagination jika tidak ekspor
+    $pembelian = $query->orderBy('created_at', 'desc')->paginate($entries);
+
+    return view('cashier.pembelian.index', compact('pembelian', 'search', 'entries', 'cashierName'));
+}
+
+
+
 
     public function getPembelianAdmin(Request $request)
     {
@@ -86,7 +107,7 @@ class PembelianController extends Controller
                 ->where('employee_id', $userId)
                 ->findOrFail($id);
 
-            Log::info('Sales data: ' . json_encode($sales->toArray()));
+            \Log::info('Sales data: ' . json_encode($sales->toArray()));
 
             $pointsUsed = 0;
             $pointsEarned = 0;
@@ -117,7 +138,7 @@ class PembelianController extends Controller
 
             return response()->json($salesData);
         } catch (Exception $e) {
-            Log::error('Error in getPurchaseDetail: ' . $e->getMessage());
+            \Log::error('Error in getPurchaseDetail: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage()
             ], 500);
@@ -130,13 +151,13 @@ class PembelianController extends Controller
             $sales = Sales::with(['salesDetails.product', 'member'])
                 ->findOrFail($id);
 
-            Log::info('Sales data: ' . json_encode($sales->toArray()));
+            \Log::info('Sales data: ' . json_encode($sales->toArray()));
 
             $pointsUsed = 0;
             $pointsEarned = 0;
 
-            if (class_exists('App\Models\Point')) {
-                $points = App\Models\Point::where('sales_id', $id)->get();
+            if (class_exists('Point')) {
+                $points = Point::where('sales_id', $id)->get();
                 $pointsUsed = $points->sum('points_used');
                 $pointsEarned = $points->sum('points_earned');
             }
@@ -147,7 +168,7 @@ class PembelianController extends Controller
 
             foreach ($salesData['sales_details'] as $key => $detail) {
                 if (!isset($detail['product']) || !isset($detail['product']['name'])) {
-                    $product = App\Models\Product::find($detail['product_id']);
+                    $product = Product::find($detail['product_id']);
                     if ($product) {
                         $salesData['sales_details'][$key]['product'] = $product->toArray();
                     } else {
@@ -161,7 +182,7 @@ class PembelianController extends Controller
 
             return response()->json($salesData);
         } catch (Exception $e) {
-            Log::error('Error in getDetailPembelianAdmin: ' . $e->getMessage());
+            \Log::error('Error in getDetailPembelianAdmin: ' . $e->getMessage());
             return response()->json([
                 'error' => $e->getMessage()
             ], 500);
@@ -177,8 +198,8 @@ class PembelianController extends Controller
             $pointsUsed = 0;
             $pointsEarned = 0;
 
-            if (class_exists('App\Models\Point')) {
-                $points = App\Models\Point::where('sales_id', $id)->get();
+            if (class_exists('Point')) {
+                $points = Point::where('sales_id', $id)->get();
                 $pointsUsed = $points->sum('points_used');
                 $pointsEarned = $points->sum('points_earned');
             }
@@ -202,7 +223,7 @@ class PembelianController extends Controller
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            Log::error('Error in exportPembelianPDF: ' . $e->getMessage());
+            \Log::error('Error in exportPembelianPDF: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to generate PDF: ' . $e->getMessage());
         }
     }

@@ -9,9 +9,27 @@
                 <span>Tambah penjualan</span>
             </a>
 
-            <div id="exportExcel" class="bg-green-500 hover:bg-green-600 px-5 py-2 text-white rounded-md cursor-pointer w-full md:w-[300px] flex justify-center">
-                <span>Export Excel</span>
+            <div class="relative inline-block">
+                <button id="exportExcel" class="bg-green-500 hover:bg-green-600 px-5 py-2 text-white rounded-md cursor-pointer w-full md:w-[300px] flex justify-center">
+                    Pilih Filter untuk Export
+                </button>
+                <div id="exportDropdown" class="dropdown-content hidden absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md z-10">
+                    <ul class="text-gray-700 text-sm">
+                        <li><button id="exportAll" class="block px-4 py-2">Keseluruhan</button></li>
+                        <li><button id="exportDay" class="block px-4 py-2">Per Hari</button></li>
+                        <li><button id="exportMonth" class="block px-4 py-2">Per Bulan</button></li>
+                        <li><button id="exportYear" class="block px-4 py-2">Per Tahun</button></li>
+                    </ul>
+                </div>
+                <div id="exportButtonWrapper" class="mt-2 hidden">
+                    <button id="downloadExport" class="bg-green-500 hover:bg-green-600 px-5 py-2 text-white rounded-md cursor-pointer w-full md:w-[300px] flex justify-center">
+                        Export Excel
+                    </button>
+                </div>
             </div>
+
+
+
 
             <select id="entries" name="entries" class="px-5 py-2 border rounded-md text-gray-700 cursor-pointer w-full md:w-[300px]">
                 <option value="10" {{ request('entries') == 10 ? 'selected' : '' }}>10 Data</option>
@@ -182,71 +200,110 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            function exportTableToExcel() {
-                try {
-                    const exportBtn = document.getElementById("exportExcel");
-                    const originalText = exportBtn.innerHTML;
-                    exportBtn.innerHTML = "<span>Loading...</span>";
+    const exportBtn = document.getElementById("exportExcel");
+    const exportDropdown = document.getElementById("exportDropdown");
+    const exportButtonWrapper = document.getElementById("exportButtonWrapper");
+    const downloadExport = document.getElementById("downloadExport");
 
-                    fetch(`${window.location.pathname}?export=true`, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        const wb = XLSX.utils.book_new();
+    // Tampilkan dropdown saat tombol export ditekan
+    exportBtn.addEventListener("click", function() {
+        exportDropdown.classList.toggle("hidden");
+    });
 
-                        const ws = XLSX.utils.json_to_sheet(data.map((item, index) => {
-                            return {
-                                'No': index + 1,
-                                'Nama Pelanggan': item.member ? item.member.name : 'Non-member',
-                                'Tanggal Pembelian': new Date(item.created_at).toLocaleString('id-ID', {
-                                    day: 'numeric',
-                                    month: 'long',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                }),
-                                'Total Harga': `Rp ${item.total_amount.toLocaleString('id-ID')}`,
-                                'Dibuat Oleh': item.cashier_name
-                            };
-                        }));
+    let selectedFilter = '';
 
-                        const wscols = [
-                            {wch: 5},
-                            {wch: 25},
-                            {wch: 25},
-                            {wch: 20},
-                            {wch: 20},
-                        ];
-                        ws['!cols'] = wscols;
+    // Pilihan untuk Keseluruhan
+    document.getElementById("exportAll").addEventListener("click", function() {
+        selectedFilter = 'all';
+        exportDropdown.classList.add("hidden");
+        exportButtonWrapper.classList.remove("hidden");
+    });
 
-                        XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
+    // Pilihan untuk Per Bulan
+    document.getElementById("exportMonth").addEventListener("click", function() {
+        selectedFilter = 'month';
+        exportDropdown.classList.add("hidden");
+        exportButtonWrapper.classList.remove("hidden");
+    });
 
-                        XLSX.writeFile(wb, "Data_Pembelian.xlsx");
+    // Pilihan untuk Per Tahun
+    document.getElementById("exportYear").addEventListener("click", function() {
+        selectedFilter = 'year';
+        exportDropdown.classList.add("hidden");
+        exportButtonWrapper.classList.remove("hidden");
+    });
 
-                        exportBtn.innerHTML = originalText;
-                    })
-                    .catch(error => {
-                        console.error("Export error:", error);
-                        alert("Terjadi kesalahan saat mengekspor data: " + error.message);
-                        exportBtn.innerHTML = originalText;
-                    });
+    // Pilihan untuk Per Hari
+    document.getElementById("exportDay").addEventListener("click", function() {
+        selectedFilter = 'day';
+        exportDropdown.classList.add("hidden");
+        exportButtonWrapper.classList.remove("hidden");
+    });
 
-                    return true;
-                } catch (error) {
-                    console.error("Export error:", error);
-                    alert("Terjadi kesalahan saat mengekspor data: " + error.message);
-                    return false;
+    // Fungsi untuk mengekspor data berdasarkan filter yang dipilih
+    downloadExport.addEventListener("click", function() {
+        exportTableToExcel(selectedFilter);
+    });
+
+    // Fungsi untuk mengirim permintaan ekspor ke server
+    function exportTableToExcel(filter = '') {
+        try {
+            const originalText = downloadExport.innerHTML;
+            downloadExport.innerHTML = "<span>Loading...</span>";
+
+            const url = `${window.location.pathname}?export=true&filter=${filter}`;
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
                 }
-            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(data.map((item, index) => {
+                    return {
+                        'No': index + 1,
+                        'Nama Pelanggan': item.member ? item.member.name : 'Non-member',
+                        'Tanggal Pembelian': new Date(item.created_at).toLocaleString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }),
+                        'Total Harga': `Rp ${item.total_amount.toLocaleString('id-ID')}`,
+                        'Dibuat Oleh': item.cashier_name
+                    };
+                }));
 
-            const exportButton = document.getElementById("exportExcel");
-            if (exportButton) {
-                exportButton.addEventListener("click", exportTableToExcel);
-            }
-        });
+                const wscols = [
+                    {wch: 5},
+                    {wch: 25},
+                    {wch: 25},
+                    {wch: 20},
+                    {wch: 20},
+                ];
+                ws['!cols'] = wscols;
+
+                XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
+                XLSX.writeFile(wb, "Data_Pembelian.xlsx");
+
+                downloadExport.innerHTML = originalText;  // Reset text after export
+            })
+            .catch(error => {
+                console.error("Export error:", error);
+                alert("Terjadi kesalahan saat mengekspor data: " + error.message);
+                downloadExport.innerHTML = originalText;  // Reset text on error
+            });
+        } catch (error) {
+            console.error("Export error:", error);
+            alert("Terjadi kesalahan saat mengekspor data: " + error.message);
+        }
+    }
+});
+
+
+
     </script>
 
     <script>

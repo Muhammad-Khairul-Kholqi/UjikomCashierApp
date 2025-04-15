@@ -82,6 +82,8 @@
 </head>
 <body>
     <div class="container">
+        <h1 class="bold text-xl">BelanjaDisini.</h1>
+        <p>Jl Sumatera 112-114, Surabaya, Jawa Timur, Indonesia</p>
         <div class="header">
             <h1>INVOICE</h1>
             <p>No. Transaksi: #{{ $sales->id }}</p>

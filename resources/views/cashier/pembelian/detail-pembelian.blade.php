@@ -63,6 +63,7 @@
                         <label for="payment" class="block mb-2 font-medium">Total Bayar:</label>
                         <input type="number" name="payment" id="payment" class="w-full p-2 border rounded" placeholder="Rp. 0" onkeyup="calculateChange()" required>
                         <p id="payment_error" class="text-red-500 text-sm hidden">Pembayaran harus diisi dan tidak boleh kurang dari total belanja</p>
+                        <p id="payment_limit_error" class="text-red-500 text-sm hidden">Nominal terlalu besar</p>
                     </div>
 
                     <div>
@@ -191,6 +192,7 @@
             const memberPhone = document.getElementById('member_phone').value;
             const totalAmount = parseFloat(document.getElementById('total_amount_input').value);
             const payment = parseFloat(document.getElementById('payment').value) || 0;
+            const paymentLimit = 9999999999999;
 
             if (status === 'member' && !memberPhone.trim()) {
                 document.getElementById('member_phone_error').classList.remove('hidden');
@@ -206,11 +208,42 @@
                 document.getElementById('payment_error').classList.add('hidden');
             }
 
+            if (payment > paymentLimit) {
+                document.getElementById('payment_limit_error').classList.remove('hidden');
+                isValid = false;
+            } else {
+                document.getElementById('payment_limit_error').classList.add('hidden');
+            }
+
             return isValid;
         }
 
         function formatNumber(number) {
             return new Intl.NumberFormat('id-ID').format(number);
+        }
+
+        function calculateChange() {
+            const totalAmount = parseFloat(document.getElementById('total_amount_input').value);
+            const payment = parseFloat(document.getElementById('payment').value) || 0;
+            const paymentLimit = 9999999999999;
+
+            if (payment > paymentLimit) {
+                document.getElementById('payment_limit_error').classList.remove('hidden');
+            } else {
+                document.getElementById('payment_limit_error').classList.add('hidden');
+            }
+
+            const change = payment - totalAmount;
+
+            if (change >= 0) {
+                document.getElementById('change').value = 'Rp. ' + formatNumber(change);
+                document.getElementById('change_value').value = change;
+                document.getElementById('payment_error').classList.add('hidden');
+            } else {
+                document.getElementById('change').value = 'Pembayaran kurang';
+                document.getElementById('change_value').value = '';
+                document.getElementById('payment_error').classList.remove('hidden');
+            }
         }
     </script>
 @endsection
