@@ -16,6 +16,7 @@
                 <option>25 Data</option>
                 <option>50 Data</option>
                 <option>100 Data</option>
+                <option>200 Data</option>
             </select>
 
             <form id="searchForm" class="w-full">
