@@ -3,20 +3,25 @@
 @section('content-admin')
     <h1 class="font-bold text-2xl">Pengguna</h1>
 
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mt-4" role="alert">
+            <span class="block sm:inline">{{ session('success') }}</span>
+        </div>
+    @endif
+
     <div class="p-5 border mt-5">
         <div class="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-5">
-            <a href="/admin/create/user"
+            <a href="{{ route('admin.users.create') }}"
                 class="bg-blue-500 hover:bg-blue-600 px-5 py-2 text-white rounded-md cursor-pointer w-full md:w-[300px] flex justify-center">
                 <span>Tambah Pengguna</span>
             </a>
 
             <select id="entries" name="entries"
                 class="px-5 py-2 border rounded-md text-gray-700 cursor-pointer w-full md:w-[300px]">
-                <option>10 Data</option>
-                <option>25 Data</option>
-                <option>50 Data</option>
-                <option>100 Data</option>
-                <option>200 Data</option>
+                <option value="10" {{ request('entries') == 10 ? 'selected' : '' }}>10 Data</option>
+                <option value="25" {{ request('entries') == 25 ? 'selected' : '' }}>25 Data</option>
+                <option value="50" {{ request('entries') == 50 ? 'selected' : '' }}>50 Data</option>
+                <option value="100" {{ request('entries') == 100 ? 'selected' : '' }}>100 Data</option>
             </select>
 
             <form id="searchForm" class="w-full">
@@ -47,37 +52,99 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="bg-white border-b">
-                        <th scope="row" class="px-6 py-4 font-medium">
-                            1
-                        </th>
-                        <th scope="row" class="px-6 py-4 font-medium">
-                            1
-                        </th>
-                        <td class="px-6 py-4">
-                            1
-                        </td>
-                        <td class="px-6 py-4">
-                            1
-                        </td>
-                        <td class="px-6 py-4 flex items-center justify-start gap-2">
-                            <a href=""
-                                class="bg-yellow-500 hover:bg-yellow-600 p-2 rounded-md cursor-pointer">
-                                <x-heroicon-o-pencil-square class="w-4 h-4 text-white" />
-                            </a>
-                            <form action="" method="POST"
-                                onsubmit="return">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                    class="bg-red-500 hover:bg-red-600 p-2 rounded-md cursor-pointer">
-                                    <x-heroicon-o-trash class="w-4 h-4 text-white" />
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
+                    @forelse($users as $index => $user)
+                        <tr class="bg-white border-b">
+                            <th scope="row" class="px-6 py-4 font-medium">
+                                {{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}
+                            </th>
+                            <th scope="row" class="px-6 py-4 font-medium">
+                                {{ $user->email }}
+                            </th>
+                            <td class="px-6 py-4">
+                                {{ $user->name }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {{ ucfirst($user->role) }}
+                            </td>
+                            <td class="px-6 py-4 flex items-center justify-start gap-2">
+                                <a href="{{ route('admin.users.edit', $user) }}"
+                                    class="bg-yellow-500 hover:bg-yellow-600 p-2 rounded-md cursor-pointer">
+                                    <x-heroicon-o-pencil-square class="w-4 h-4 text-white" />
+                                </a>
+                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST"
+                                    onsubmit="return confirmDelete(event);">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                        class="bg-red-500 hover:bg-red-600 p-2 rounded-md cursor-pointer">
+                                        <x-heroicon-o-trash class="w-4 h-4 text-white" />
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr class="bg-white border-b">
+                            <td colspan="5" class="px-6 py-4 text-center">
+                                Tidak ada data pengguna
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-5">
+            {{ $users->appends(['search' => request('search'), 'entries' => request('entries')])->links() }}
+        </div>
     </div>
+
+    <script>
+        function confirmDelete(event) {
+            event.preventDefault();
+            let form = event.target;
+
+            Swal.fire({
+                title: 'Yakin ingin menghapus?',
+                text: "Data pengguna akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const entriesSelect = document.getElementById("entries");
+            const searchInput = document.getElementById("searchInput");
+
+            entriesSelect.addEventListener("change", function() {
+                updateURL();
+            });
+
+            searchInput.addEventListener("input", function() {
+                updateURL();
+            });
+
+            function updateURL() {
+                const entries = entriesSelect.value;
+                const search = searchInput.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set("entries", entries);
+                if (search) {
+                    url.searchParams.set("search", search);
+                } else {
+                    url.searchParams.delete("search");
+                }
+                window.location.href = url.toString();
+            }
+        });
+    </script>
 @endsection

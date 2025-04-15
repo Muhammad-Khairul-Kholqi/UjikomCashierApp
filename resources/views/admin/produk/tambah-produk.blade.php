@@ -4,7 +4,7 @@
     <h1 class="font-bold text-2xl mb-5">Tambah Produk</h1>
 
     <div class="bg-white shadow-md rounded-lg p-6">
-        <form action="" method="POST" enctype="multipart/form-data" class="space-y-5">
+        <form action="{{ route('admin.produk.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -40,4 +40,20 @@
             </button>
         </form>
     </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const fileInput = event.target;
+            const fileLabel = document.getElementById('fileLabel');
+            const fileName = fileInput.files[0]?.name || "Pilih file...";
+
+            if (fileName.length > 20) {
+                const extension = fileName.split('.').pop();
+                const truncatedName = fileName.substring(0, 10) + '...' + extension;
+                fileLabel.textContent = truncatedName;
+            } else {
+                fileLabel.textContent = fileName;
+            }
+        });
+    </script>
 @endsection

@@ -12,7 +12,16 @@
     <div class="bg-white p-5 rounded-xl w-full max-w-[400px] shadow-lg">
         <h1 class="text-xl font-medium text-center">Login Akun</h1>
 
-        <form method="POST" class="mt-5">
+        @if ($errors->any())
+            <div class="bg-red-500 text-white p-2 rounded mt-3">
+                @foreach ($errors->all() as $error)
+                    <p>{{ $error }}</p>
+                @endforeach
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('login.submit') }}" class="mt-5">
+            @csrf
             <div class="mb-5">
                 <label for="email" class="block font-medium">Email</label>
                 <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded-lg p-2" placeholder="youremail@example.com" required>

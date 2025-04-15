@@ -4,33 +4,35 @@
     <h1 class="font-bold text-2xl mb-5">Edit Produk</h1>
 
     <div class="bg-white shadow-md rounded-lg p-6">
-        <form action="" method="POST" enctype="multipart/form-data" class="space-y-5">
+        <form action="{{ route('admin.produk.update', $produk->id) }}" method="POST" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PUT')
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-gray-700 font-medium mb-1">Nama Produk</label>
-                    <input type="text" name="nama_produk" value="" required
+                    <input type="text" name="nama_produk" value="{{ old('nama_produk', $produk->nama_produk) }}" required
                         class="border border-gray-300 focus:border-blue-500 rounded-lg px-4 h-10 w-full outline-none">
                 </div>
 
                 <div>
                     <label class="block text-gray-700 font-medium mb-1">Harga</label>
-                    <input type="number" name="harga" value="" required min="1"
+                    <input type="number" name="harga" value="{{ old('harga', $produk->harga) }}" required min="1"
                         class="border border-gray-300 focus:border-blue-500 rounded-lg px-4 h-10 w-full outline-none">
                 </div>
 
                 <div>
                     <label class="block text-gray-700 font-medium mb-1">Stok</label>
-                    <input type="number" name="stok" value="" required min="1"
+                    <input type="number" name="stok" value="{{ old('stok', $produk->stok) }}" required min="1"
                         class="border border-gray-300 focus:border-blue-500 rounded-lg px-4 h-10 w-full outline-none">
                 </div>
 
                 <div>
                     <label class="block text-gray-700 font-medium mb-1">Gambar Produk</label>
                     <div class="flex items-center space-x-3">
-                        <p>image sebelumnya here</p>
+                        @if ($produk->foto_produk)
+                            <img src="{{ asset('storage/' . $produk->foto_produk) }}" alt="Gambar Produk" class="w-16 h-16 object-cover rounded">
+                        @endif
                         <input type="file" name="foto_produk" class="border border-gray-300 focus:border-blue-500 rounded-r-lg w-full outline-none">
                     </div>
                 </div>

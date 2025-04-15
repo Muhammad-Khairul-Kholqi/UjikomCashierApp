@@ -1,10 +1,14 @@
-@extends('layouts.admin-layouts')
+@extends('layouts.cashier-layouts')
 
-@section('content-admin')
+@section('content-cashier')
     <h1 class="font-bold text-2xl">Pembelian</h1>
 
     <div class="p-5 border mt-5">
         <div class="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-5">
+            <a href="{{ route('cashier.pembelian.create') }}" class="bg-blue-500 hover:bg-blue-600 px-5 py-2 text-white rounded-md cursor-pointer w-full md:w-[300px] flex justify-center">
+                <span>Tambah penjualan</span>
+            </a>
+
             <div id="exportExcel" class="bg-green-500 hover:bg-green-600 px-5 py-2 text-white rounded-md cursor-pointer w-full md:w-[300px] flex justify-center">
                 <span>Export Excel</span>
             </div>
@@ -17,7 +21,7 @@
             </select>
 
             <form id="searchForm" class="w-full">
-                <input type="text" id="searchInput" name="search" value="{{ request('search') }}"
+                <input type="text" id="searchInput" name="search"
                     class="w-full border py-2 px-5 rounded-md" placeholder="Cari nama pelanggan">
             </form>
         </div>
@@ -33,7 +37,7 @@
                             Nama pelanggan
                         </th>
                         <th scope="col" class="px-6 py-5">
-                            Tanggal penjualan
+                            Tanggal pembelian
                         </th>
                         <th scope="col" class="px-6 py-5">
                             Total harga
@@ -47,40 +51,50 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($pembelian as $item)
+                    @forelse ($pembelian as $index => $items )
                         <tr class="bg-white border-b">
-                            <td class="px-6 py-4 font-medium">
+                            <th scope="row" class="px-6 py-4 font-medium">
                                 {{ ($pembelian->currentPage() - 1) * $pembelian->perPage() + $loop->iteration }}
-                            </td>
+                            </th>
                             <td class="px-6 py-4 font-bold text-gray-700">
-                                {{ $item->member->name ?? 'Non-member' }}
+                                {{ $items->member->name ?? 'Non-member' }}
                             </td>
                             <td class="px-6 py-4">
-                                {{ $item->created_at->timezone('Asia/Jakarta')->format('d F Y, H:i') }}
+                                {{ $items->created_at->timezone('Asia/Jakarta')->format('d F Y, H:i') }}
                             </td>
                             <td class="px-6 py-4">
-                                Rp {{ number_format($item->total_amount, 0, ',', '.') }}
+                                Rp {{ number_format($items->total_amount, 0, ',', '.') }}
                             </td>
                             <td class="px-6 py-4">
-                                {{ $item->employee->name ?? '-' }}
+                                {{ $cashierName }}
                             </td>
+
                             <td class="px-6 py-4 flex items-center justify-start gap-2">
-                                <div data-id="{{ $item->id }}" class="view-purchase bg-yellow-500 hover:bg-yellow-600 p-2 rounded-md cursor-pointer">
-                                    <x-heroicon-o-eye class="w-4 h-4 text-white" />
-                                </div>
-                                <div class="bg-red-500 hover:bg-red-600 p-2 rounded-md cursor-pointer">
-                                    <x-heroicon-o-arrow-down-tray class="w-4 h-4 text-white" />
-                                </div>
+                                <td class="px-6 py-4 flex items-center justify-start gap-2">
+                                    <div data-id="{{ $items->id }}" class="view-purchase bg-yellow-500 hover:bg-yellow-600 p-2 rounded-md cursor-pointer"><x-heroicon-o-eye class="w-4 h-4 text-white" /></div>
+                                    <div class="bg-red-500 hover:bg-red-600 p-2 rounded-md cursor-pointer"><x-heroicon-o-arrow-down-on-square class="w-4 h-4 text-white" /></div>
+                                </td>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-4">Tidak ada pembelian ditemukan.</td>
+                            <td colspan="6" class="text-center py-4">Tidak ada produk yang ditemukan.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
+            <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+                <div class="bg-white p-5 rounded-lg max-w-3xl w-full">
+                    <h2 class="text-xl font-bold mb-4">Detail Pembelian</h2>
+                    <div id="modalContent" class="space-y-3">
+                    </div>
+                    <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
+                        Tutup
+                    </button>
+                </div>
+            </div>
         </div>
+
         <div class="mt-5">
             {{ $pembelian->appends(['search' => request('search'), 'entries' => request('entries')])->links() }}
         </div>
@@ -194,8 +208,8 @@
                                     hour: '2-digit',
                                     minute: '2-digit'
                                 }),
-                                'Total Harga': `Rp ${parseInt(item.total_amount).toLocaleString('id-ID')}`,
-                                'Kasir': item.employee ? item.employee.name : '-'
+                                'Total Harga': `Rp ${item.total_amount.toLocaleString('id-ID')}`,
+                                'Dibuat Oleh': item.cashier_name
                             };
                         }));
 
@@ -210,7 +224,7 @@
 
                         XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
 
-                        XLSX.writeFile(wb, "Data_Pembelian_Admin.xlsx");
+                        XLSX.writeFile(wb, "Data_Pembelian.xlsx");
 
                         exportBtn.innerHTML = originalText;
                     })
@@ -224,7 +238,6 @@
                 } catch (error) {
                     console.error("Export error:", error);
                     alert("Terjadi kesalahan saat mengekspor data: " + error.message);
-                    exportBtn.innerHTML = originalText;
                     return false;
                 }
             }
@@ -240,9 +253,6 @@
         document.addEventListener("DOMContentLoaded", function () {
             const entriesSelect = document.getElementById("entries");
             const searchInput = document.getElementById("searchInput");
-            const modal = document.getElementById("purchaseDetailModal");
-            const closeModalBtn = document.getElementById("closeModal");
-            const closeModalButtonBtn = document.getElementById("closeModalButton");
             const downloadButtons = document.querySelectorAll(".bg-red-500.hover\\:bg-red-600");
 
             downloadButtons.forEach(button => {
@@ -253,8 +263,38 @@
             });
 
             function exportPdf(id) {
-                window.location.href = `/admin/pembelian/${id}/pdf`;
+                window.location.href = `/cashier/pembelian/${id}/pdf`;
             }
+
+
+            entriesSelect.addEventListener("change", function () {
+                updateURL();
+            });
+
+            searchInput.addEventListener("input", function () {
+                updateURL();
+            });
+
+            function updateURL() {
+                const entries = entriesSelect.value;
+                const search = searchInput.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set("entries", entries);
+                if (search) {
+                    url.searchParams.set("search", search);
+                } else {
+                    url.searchParams.delete("search");
+                }
+                window.location.href = url.toString();
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const entriesSelect = document.getElementById("entries");
+            const searchInput = document.getElementById("searchInput");
+            const modal = document.getElementById("purchaseDetailModal");
+            const closeModalBtn = document.getElementById("closeModal");
+            const closeModalButtonBtn = document.getElementById("closeModalButton");
 
             entriesSelect.addEventListener("change", function () {
                 updateURL();
@@ -309,7 +349,7 @@
                 openModal();
                 document.getElementById("productTableBody").innerHTML = '<tr><td colspan="4" class="text-center py-4">Loading...</td></tr>';
 
-                fetch(`/admin/pembelian/${id}/detail`)
+                fetch(`/cashier/pembelian/${id}/detail`)
                     .then(response => {
                         if (!response.ok) {
                             return response.text().then(text => {

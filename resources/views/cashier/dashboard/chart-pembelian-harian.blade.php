@@ -6,17 +6,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="border p-5 rounded-lg w-full shadow-md">
+    <div class="border p-5 rounded-lg w-full shadow-md mt-5">
         <div class="h-[400px]">
             <canvas id="purchaseChart"></canvas>
         </div>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             const ctx = document.getElementById('purchaseChart').getContext('2d');
             const tahunSekarang = new Date().getFullYear();
-
             const labelTahun = `Jumlah Penjualan Tahun ${tahunSekarang}`;
 
             const labels = [
@@ -44,11 +43,13 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true }
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
             });
         });
-    </script>
+</script>
 </body>
 </html>
